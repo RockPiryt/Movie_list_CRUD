@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, request
+from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, FloatField
@@ -63,7 +63,8 @@ def home():
 def edit():
     #Get book from db to edit
     id_movie_to_edit = request.args.get("movie_id")
-    movie_to_edit = Movie.query.filter_by(id=id_movie_to_edit).first()
+    # movie_to_edit = Movie.query.filter_by(id=id_movie_to_edit).first()
+    movie_to_edit = Movie.query.get(id_movie_to_edit)
 
     #Create flaskform to  add new value for review and rating to movie_to_edit
     python_form = EditForm()
@@ -76,9 +77,16 @@ def edit():
         return redirect(url_for('home'))
     return render_template("edit.html", html_form=python_form, html_movie_to_edit=movie_to_edit)
 
-@app.route("/delete")
+@app.route("/delete", methods=["GET", "POST"])
 def delete():
-    pass
+    #Get book from db to delete
+    id_movie_to_delete = request.args.get("movie_id")
+    movie_to_delete = Movie.query.filter_by(id=id_movie_to_delete).first()
+    db.session.delete(movie_to_delete)
+    db.session.commit()
+    flash(f'{movie_to_delete.title} Successfully deleted', 'success')
+    return redirect(url_for('home'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)
