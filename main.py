@@ -34,9 +34,9 @@ class Movie(db.Model):
     title = db.Column(db.String, nullable=False)
     year = db.Column(db.Integer, nullable=False)
     description = db.Column(db.String, nullable=False)
-    rating = db.Column(db.Float, nullable=False)
-    ranking = db.Column(db.Integer, nullable=False)
-    review = db.Column(db.String(250), nullable=False)
+    rating = db.Column(db.Float, nullable=True)
+    ranking = db.Column(db.Integer, nullable=True)
+    review = db.Column(db.String(250), nullable=True)
     img_url = db.Column(db.String(250), unique=True, nullable=False)
 
 
@@ -45,6 +45,7 @@ class Movie(db.Model):
 
 db.create_all()
 
+#First information to db
 # new_movie = Movie(
 #     title="Phone Booth",
 #     year=2002,
@@ -72,12 +73,16 @@ class AddForm(FlaskForm):
 
 @app.route("/")
 def home():
+    '''Show all movie in database'''
+
     all_movies = Movie.query.all()
     return render_template("index.html", html_all_movies=all_movies)
 
 
 @app.route("/edit", methods=["GET", "POST"])
 def edit():
+    '''Edit rating and review (use movie_id)'''
+
     #Get book from db to edit
     id_movie_to_edit = request.args.get("movie_id")
     # movie_to_edit = Movie.query.filter_by(id=id_movie_to_edit).first()
@@ -96,6 +101,8 @@ def edit():
 
 @app.route("/delete", methods=["GET", "POST"])
 def delete():
+    '''Delete movie from database'''
+
     #Get book from db to delete
     id_movie_to_delete = request.args.get("movie_id")
     movie_to_delete = Movie.query.filter_by(id=id_movie_to_delete).first()
@@ -106,25 +113,57 @@ def delete():
 
 @app.route("/add", methods=["GET", "POST"])
 def add_movie():
+    '''Add movie to database movieDB(make API request)'''
+
     add_form = AddForm()
     if add_form.validate_on_submit():
         new_movie_title =  add_form.title.data
+
+        # headers = {
+        # "accept": "application/json",
+        # "Authorization": "Bearer token"
+        # }
 
         params={
             "api_key":MOVIE_DB_API_KEY,
             "query": new_movie_title,
         }
-        headers = {
-        "accept": "application/json",
-        "Authorization": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI1M2Q0MTJjYWUwMmM5MWJiMmMxNTY1MTA3MWM5NWIyYiIsInN1YiI6IjY0OGIyYjJlMDc2Y2U4MDBjOGI5NTM2OSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.yygo0bPemaoZMmMXtzFYiCsv3iiceuiJjjYu34dCpeQ"
-        }
 
-        response = requests.get(MOVIE_DB_SEARCH_URL,params=params, headers=headers)
+        # response = requests.get(MOVIE_DB_SEARCH_URL, headers=headers, params=params)
+        response = requests.get(MOVIE_DB_SEARCH_URL, params=params)
         optional_movies = response.json()["results"]
 
         return render_template("select.html", html_optional_movies=optional_movies)
-    
     return render_template("add.html", html_add_form=add_form )
+
+@app.route("/details", methods=["GET", "POST"])
+def add_movie_details():
+    '''Get information about movie from movie DB (make API request). 
+    Save data in database.'''
+
+    #Get movie_id from select.html
+    select_movie_id = request.args.get("movie_id")
+    #Make API url
+    movie_api_url = f"{MOVIE_DB_INFO_URL}/{select_movie_id}"
+
+    #Get information from MovieDB
+    #Params to url
+    params={
+        "api_key":MOVIE_DB_API_KEY,
+        "language": "en-US",
+        }
+    response = requests.get(movie_api_url, params=params)
+    movie_data = response.json()
+
+    #Save data to SQLite database (use class Movie)
+    new_movie=Movie(title=movie_data["title"],
+                    year=movie_data["release_date"].split("-")[0],
+                    img_url=f'{MOVIE_DB_IMAGE_URL}{movie_data["poster_path"]}',
+                    description=movie_data["overview"],
+                    )
+    db.session.add(new_movie)
+    db.session.commit()
+    return redirect(url_for("home"))
 
 if __name__ == '__main__':
     app.run(debug=True)
