@@ -1,5 +1,5 @@
-{% extends 'bootstrap/base.html' %}
-{% import "bootstrap/wtf.html" as wtf %}
+{% extends 'new_base.html' %}
+{% from 'bootstrap5/form.html' import render_form %}
 
 {% block styles %}
   {{ super() }}
@@ -13,9 +13,11 @@
 {% block content %}
 <div class="container">
     <h1 class="heading">Select Movie</h1>
-  <p>
-    <a href="#"> MOVIE TITLE - MOVIE RELEASE DATE</a>
-  </p>
+    {% for movieDB in html_optional_movies %}
+      <p>
+        <a href="#"> {{ movieDB.title }} - {{ movieDB.release_date }}</a>
+      </p>
+    {% endfor %}
 
 </div>
 {% endblock %}

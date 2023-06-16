@@ -3,18 +3,31 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, FloatField
 from wtforms.validators import DataRequired
-import requests
 from flask_bootstrap import Bootstrap5
+import requests
+import os
+from dotenv import load_dotenv
+
+
+load_dotenv("C:/Users/Popuś/Desktop/Python/environment_variables/.env")
+MOVIE_DB_API_KEY = os.getenv("api_key_movieDB")
+
+
+MOVIE_DB_SEARCH_URL = "https://api.themoviedb.org/3/search/movie"
+MOVIE_DB_INFO_URL = "https://api.themoviedb.org/3/movie"
+MOVIE_DB_IMAGE_URL = "https://image.tmdb.org/t/p/w500"
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
 bootstrap = Bootstrap5(app)
 
-#Create DB
+##-----------------------------------Create DB
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///movies.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db=SQLAlchemy(app)
 app.app_context().push()
+
 
 class Movie(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -45,11 +58,15 @@ db.create_all()
 # db.session.add(new_movie)
 # db.session.commit()
 
-
+##------------------------------Flaskforms
 class EditForm(FlaskForm):
     rating = FloatField(label="Your Rating out of 10 e.g. 7.5", validators=[DataRequired()])
     review = StringField(label="Your Review", validators=[DataRequired()])
     submit = SubmitField(label="Update")
+
+class AddForm(FlaskForm):
+    title = StringField(label="Title", validators=[DataRequired()])
+    submit = SubmitField(label="Add movie")
 
 
 
@@ -87,6 +104,27 @@ def delete():
     flash(f'{movie_to_delete.title} Successfully deleted', 'success')
     return redirect(url_for('home'))
 
+@app.route("/add", methods=["GET", "POST"])
+def add_movie():
+    add_form = AddForm()
+    if add_form.validate_on_submit():
+        new_movie_title =  add_form.title.data
+
+        params={
+            "api_key":MOVIE_DB_API_KEY,
+            "query": new_movie_title,
+        }
+        headers = {
+        "accept": "application/json",
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI1M2Q0MTJjYWUwMmM5MWJiMmMxNTY1MTA3MWM5NWIyYiIsInN1YiI6IjY0OGIyYjJlMDc2Y2U4MDBjOGI5NTM2OSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.yygo0bPemaoZMmMXtzFYiCsv3iiceuiJjjYu34dCpeQ"
+        }
+
+        response = requests.get(MOVIE_DB_SEARCH_URL,params=params, headers=headers)
+        optional_movies = response.json()["results"]
+
+        return render_template("select.html", html_optional_movies=optional_movies)
+    
+    return render_template("add.html", html_add_form=add_form )
 
 if __name__ == '__main__':
     app.run(debug=True)
