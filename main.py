@@ -85,15 +85,15 @@ def edit():
 
     #Get book from db to edit
     id_movie_to_edit = request.args.get("movie_id")
-    # movie_to_edit = Movie.query.filter_by(id=id_movie_to_edit).first()
-    movie_to_edit = Movie.query.get(id_movie_to_edit)
+    movie_to_edit = Movie.query.filter_by(id=id_movie_to_edit).first()
+    # movie_to_edit = Movie.query.get(id_movie_to_edit)
 
     #Create flaskform to  add new value for review and rating to movie_to_edit
     python_form = EditForm()
     if python_form.validate_on_submit():
         new_rating = python_form.rating.data
         new_review = python_form.review.data
-        movie_to_edit.rating= new_rating
+        movie_to_edit.rating = new_rating
         movie_to_edit.review = new_review
         db.session.commit()
         return redirect(url_for('home'))
@@ -163,7 +163,7 @@ def add_movie_details():
                     )
     db.session.add(new_movie)
     db.session.commit()
-    return redirect(url_for("home"))
+    return redirect(url_for("edit", movie_id=new_movie.id))
 
 if __name__ == '__main__':
     app.run(debug=True)
