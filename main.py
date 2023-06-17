@@ -7,6 +7,7 @@ from flask_bootstrap import Bootstrap5
 import requests
 import os
 from dotenv import load_dotenv
+from sqlalchemy import desc
 
 
 load_dotenv("C:/Users/Popuś/Desktop/Python/environment_variables/.env")
@@ -75,8 +76,31 @@ class AddForm(FlaskForm):
 def home():
     '''Show all movie in database'''
 
-    all_movies = Movie.query.all()
-    return render_template("index.html", html_all_movies=all_movies)
+    # all_movies = Movie.query.all()
+
+
+    #Sort movies by rating (good->bad)
+    all_movies_sorted = Movie.query.order_by(desc(Movie.rating)).all()
+
+    #Make ranking (good->bad)
+    for n in range(len(all_movies_sorted)):#n=0,1,2
+        all_movies_sorted[n].ranking = n + 1
+        #(best_movie 9.9 rating)movie[0].ranking = 0+1 (first place)
+    db.session.commit()
+
+    # #Sort movies by rating (bad->good)
+    # # first movie with lowest value e.g. 1 rating
+    # # last movie has rating 9.9
+    # all_movies_sorted = Movie.query.order_by(Movie.rating).all() 
+
+    # #Make ranking (good->bad)
+    # # The best movie in first place
+    # for n in range(len(all_movies_sorted)):#n=0,1,2
+    #     all_movies_sorted[n].ranking = len(all_movies_sorted) - n
+    #     #(bad_movie 1.2 rating)movie[0].ranking = 3-0 (third place)
+    # db.session.commit()
+    
+    return render_template("index.html", html_all_movies=all_movies_sorted)
 
 
 @app.route("/edit", methods=["GET", "POST"])
