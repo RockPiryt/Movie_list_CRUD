@@ -9,8 +9,6 @@ import os
 from dotenv import load_dotenv
 from sqlalchemy import desc
 
-###text for tests
-
 
 load_dotenv("C:/Users/Popuś/Desktop/Python/environment_variables/.env")
 MOVIE_DB_API_KEY = os.getenv("api_key_movieDB")
